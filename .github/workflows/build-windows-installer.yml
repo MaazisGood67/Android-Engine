@@ -7,6 +7,8 @@ on:
       - main
     paths:
       - "launcher.py"
+      - "wsa_manager.py"
+      - "wsa_runtime.py"
       - "telemetry.py"
       - "vm_runtime.py"
       - "telemetry_analyser.py"

@@ -1,48 +1,36 @@
 # MaazXdroid
 
-MaazXdroid is a Windows desktop manager for a QEMU-based Android virtual machine. It does not launch or depend on GameLoop.
+MaazXdroid is a purple-glass Windows companion for an already-installed Windows Subsystem for Android (WSA) runtime. It connects through standard ADB, reports Android/ABI/Google Play Services status, and sideloads an APK selected by the user. Uptodown and APKMirror buttons open their websites; their apps/APKs are not bundled.
 
-This repository contains the Windows manager and VM runtime prototype, not a new hypervisor or a finished custom Android distribution. The intended end-user flow is a prebuilt MaazXdroid QCOW2 system image plus a writable QCOW2 overlay; there is no Android system image artifact in the repository yet.
+This is not a custom Android OS image and does not install or modify WSA. The cloned upstream WSAOnWin10 repository is kept under `upstream/WSAOnWin10/` for local reference and ignored by the MaazXdroid Git repository. It is archived, AGPL-3.0 licensed, and contains/depends on separate Microsoft WSA components. Do not remove upstream copyright/license notices or redistribute Microsoft/Google payloads without appropriate rights.
 
-## Current Features
+## Runtime Requirements
 
-- Select a Windows QEMU executable and a MaazXdroid QCOW2 system image.
-- Create a writable QCOW2 overlay backed by the system image without overwriting existing user data.
-- Boot Android directly from the prepared system image and its writable overlay; no ISO or manual partitioning in the user flow.
-- Configure guest memory from 1 GB to 2 GB in the UI; the low-end default is 1280 MB with two virtual CPUs.
-- Capture aggregate/per-logical-core CPU, RAM, pagefile, and disk metrics to CSV while testing.
+- Windows 10 build and updates supported by the selected WSAOnWin10 release, with virtualization enabled.
+- WSA installed separately; enable Developer mode and use its displayed ADB endpoint.
+- Android Platform Tools (`adb.exe`).
+- The WSAOnWin10 project documents 8 GB RAM minimum and 16 GB recommended. This Vostro has 4 GB and is below that minimum; expect paging, failed starts, or severe slowdown.
 
-The VM uses WHPX acceleration and a standard virtual VGA device. WHPX requires Windows Hypervisor Platform support. The current graphics path does not provide verified 3D acceleration; many games may be slow or incompatible. ARM-only apps need a compatible translation layer, which this project does not include. The UI treats 60 FPS as a test target only, not a performance promise. The target laptop's panel is 60 Hz.
+WSA was discontinued by Microsoft in 2025, and the WSAOnWin10 repository is archived with its latest listed build from 2024. MaazXdroid does not make this stack supported or update its Android security patches.
 
-## Windows Requirements
+## Use
 
-- Windows 10/11 64-bit with Windows Hypervisor Platform available and enabled.
-- A Windows QEMU distribution containing `qemu-system-x86_64.exe` and `qemu-img.exe` in the same folder.
-- A MaazXdroid Android QCOW2 system image. The image build/distribution pipeline is not implemented yet, so the current app cannot boot Android until that artifact is supplied.
-- For the target laptop: 4 GB RAM is tight. The 1280 MB default guest allocation may still cause host memory pressure; reduce it if Windows starts paging.
+1. Install and start a compatible WSA build separately; open WSA Settings and enable Developer mode.
+2. Launch MaazXdroid, select `adb.exe`, enter the ADB endpoint shown by WSA, and connect.
+3. Check Android ABI and Google Play Services status. Gmail sign-in inside an app requires compatible Google Play Services in that WSA image; this app cannot add them.
+4. Choose a trusted `.apk` file and install it through ADB, or open Uptodown/APKMirror in a browser.
 
-## Build and Install
+The manager does not root WSA, inject DLLs, modify game files, or bypass anti-cheat. Free Fire compatibility and frame rate are not verified. The UI's 60 FPS text is a test target only, not a guarantee; this host has 4 GB RAM, legacy Intel HD graphics, and a 60 Hz display.
 
-Build the Windows installer on Windows (this Linux Codespaces workspace cannot produce a native Windows installer). Install Python 3.9+, Inno Setup 6, then run:
+## Build MaazXdroidSetup.exe
+
+Build on Windows with Python 3.9+ and Inno Setup 6:
 
 ```powershell
 Set-ExecutionPolicy -Scope Process Bypass
 .\scripts\build_windows.ps1
 ```
 
-The output is `dist\installer\MaazXdroidSetup.exe`. It installs the MaazXdroid manager per-user. It does **not** bundle QEMU or Android system images in this milestone.
+The setup installs the MaazXdroid companion UI only; it does not bundle WSA, Google apps, APK stores, or a game. The installer build script uses PowerShell internally, but end users install and use MaazXdroid through the GUI.
 
-Alternatively, run the **Build Windows Installer** workflow in GitHub Actions and download its `MaazXdroidSetup` artifact.
-
-## Intended First Boot Flow
-
-1. Install the MaazXdroid manager and a compatible Windows QEMU build.
-2. Obtain the versioned MaazXdroid Android QCOW2 image from the project release channel (not available yet).
-3. Select QEMU and the system image, then prepare writable user data once.
-4. Click **Start MaazXdroid** to boot Android directly. No ISO/partition screen should appear in the final UX.
-
-Run the unit tests with `python -m unittest discover -s tests -v`. The VM command construction is tested in this repository; actual WHPX, Android boot, graphics, and game compatibility must be tested on the Windows laptop.
-
-## Target Hardware Reality
-
-The Vostro 3300 has an i3-M380, 4 GB RAM, first-generation Intel HD Graphics, a legacy WDDM 1.1 driver, and a 60 Hz display. A virtual Android guest adds overhead and the current virtual VGA does not pass the Intel GPU through to Android. A custom branded Android OS and gaming-grade GPU path would require separate Android image/build and graphics engineering; neither is included yet. No 100 FPS or game-compatibility guarantee is made.
+Run the test suite with `python -m unittest discover -s tests -v`. Actual WSA connection and game tests require a compatible Windows machine.
