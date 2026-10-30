@@ -1,5 +1,5 @@
 #define AppName "MaazXdroid"
-#define AppVersion "0.2.1"
+#define AppVersion "0.3.0"
 
 [Setup]
 AppId={{A86B0B78-9D50-4BE4-93E6-7F5E9B7CF002}

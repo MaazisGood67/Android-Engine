@@ -9,7 +9,7 @@ This is not a custom Android OS image and does not install or modify WSA. The cl
 - Windows 10 build and updates supported by the selected WSAOnWin10 release, with virtualization enabled.
 - WSA installed separately; enable Developer mode and use its displayed ADB endpoint.
 - Android Platform Tools (`adb.exe`).
-- The WSAOnWin10 project documents 8 GB RAM minimum and 16 GB recommended. This Vostro has 4 GB and is below that minimum; expect paging, failed starts, or severe slowdown.
+- The WSAOnWin10 project documents 8 GB RAM minimum and 16 GB recommended. This Vostro has 4 GB and is below that minimum; expect paging, failed starts, or severe slowdown. The Dashboard checks the Windows build, x64 architecture, RAM, and reminds you to verify VT-x/VMP. It cannot verify BIOS virtualization or whether the required Windows KBs are installed from this cross-platform companion.
 
 WSA was discontinued by Microsoft in 2025, and the WSAOnWin10 repository is archived with its latest listed build from 2024. MaazXdroid does not make this stack supported or update its Android security patches.
 
@@ -20,7 +20,7 @@ WSA was discontinued by Microsoft in 2025, and the WSAOnWin10 repository is arch
 3. Check Android ABI and Google Play Services status. Gmail sign-in inside an app requires compatible Google Play Services in that WSA image; this app cannot add them.
 4. Choose a trusted `.apk` file and install it through ADB, or open Uptodown/APKPure/APKMirror in a browser.
 
-The low-end UI toggle removes window translucency to reduce desktop composition overhead; it does not tune WSA's VM or GPU. The Performance page reports host CPU and available RAM only. Google sign-in requires a WSA image that includes compatible Google Play Services; the manager only detects whether services and Play Store are present.
+The low-end UI toggle removes window translucency to reduce desktop composition overhead; it does not tune WSA's VM or GPU. The Performance page reports host CPU and available RAM only. Google sign-in requires a WSA image that includes compatible Google Play Services; the manager only detects whether services and Play Store are present. For this laptop, verify the required Windows updates and Virtual Machine Platform first; even if those checks pass, 4 GB RAM remains below the documented minimum, so test WSA before relying on it for Free Fire.
 
 The manager does not root WSA, inject DLLs, modify game files, or bypass anti-cheat. Free Fire compatibility and frame rate are not verified. The UI's 60 FPS text is a test target only, not a guarantee; this host has 4 GB RAM, legacy Intel HD graphics, and a 60 Hz display.
 

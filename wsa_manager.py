@@ -11,6 +11,7 @@ import webbrowser
 
 import psutil
 
+from host_compatibility import assess_host
 from wsa_runtime import WsaController
 
 
@@ -247,6 +248,27 @@ class MaazXdroidWsaApp:
             font=("Segoe UI", 10),
         ).pack(anchor="w", pady=(10, 0))
 
+        requirements = self._panel(page)
+        requirements.pack(fill="x", pady=(0, 10))
+        tk.Label(
+            requirements,
+            text="HOST COMPATIBILITY",
+            bg=self.PANEL,
+            fg=self.MUTED,
+            font=("Segoe UI", 8, "bold"),
+        ).pack(anchor="w")
+        for check in assess_host():
+            color = self.WARNING if check.status not in {"OK", "MINIMUM ONLY"} else self.ACCENT
+            tk.Label(
+                requirements,
+                text=f"{check.status}  {check.name}: {check.detail}",
+                bg=self.PANEL,
+                fg=color,
+                wraplength=680,
+                justify="left",
+                font=("Segoe UI", 8),
+            ).pack(anchor="w", pady=(5, 0))
+
     def _build_apps_page(self, page):
         self._page_heading(
             page,
@@ -317,9 +339,11 @@ class MaazXdroidWsaApp:
 
         limits = self._panel(page)
         limits.pack(fill="x")
+        checks = assess_host()
+        ram_check = next(check for check in checks if check.name == "Memory")
         tk.Label(
             limits,
-            text="60 FPS is a test target, not a guarantee. A 60 Hz display cannot show more than 60 refreshes per second. WSA 3D acceleration and Free Fire compatibility are not verified.",
+            text=f"{ram_check.detail} Low-End UI Mode reduces window translucency only; it does not tune WSA resources. 60 FPS is a test target, not a guarantee; GPU acceleration and Free Fire compatibility are unverified.",
             bg=self.PANEL,
             fg=self.WARNING,
             wraplength=680,
