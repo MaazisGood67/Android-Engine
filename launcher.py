@@ -26,10 +26,14 @@ class MaazXdroidApp:
 
     def __init__(self, root):
         self.root = root
-        self.root.title("MaazXdroid | Android VM")
-        self.root.geometry("1000x740")
-        self.root.minsize(880, 680)
+        self.root.title("MaazXdroid | Android Gaming VM")
+        self.root.geometry("1000x760")
+        self.root.minsize(880, 700)
         self.root.configure(bg=self.BACKGROUND)
+        try:
+            self.root.attributes("-alpha", 0.97)
+        except tk.TclError:
+            pass
         self._window_icon = tk.PhotoImage(width=32, height=32)
         self._window_icon.put(self.BACKGROUND, to=(0, 0, 32, 32))
         for offset in range(5, 27):
@@ -51,7 +55,7 @@ class MaazXdroidApp:
         self.user_data_path = tk.StringVar(
             value=str(app_data / "userdata" / "android-data.qcow2")
         )
-        self.vm_memory_mb = tk.StringVar(value="1536")
+        self.vm_memory_mb = tk.StringVar(value="1280")
         self.cpu_text = tk.StringVar(value="-- %")
         self.core_text = tk.StringVar(value="-- %")
         self.memory_text = tk.StringVar(value="-- GB available")
@@ -101,14 +105,14 @@ class MaazXdroidApp:
         ).pack(anchor="w")
         tk.Label(
             header,
-            text="Your Android VM",
+            text="MAAZXDROID ANDROID",
             bg=self.BACKGROUND,
             fg=self.TEXT,
             font=("Segoe UI", 25, "bold"),
         ).pack(anchor="w", pady=(3, 0))
         tk.Label(
             header,
-            text="Boot the MaazXdroid Android system image in its own virtual machine.",
+            text="A low-resource Android VM launcher. 60 FPS is a test target, not a guarantee.",
             bg=self.BACKGROUND,
             fg=self.MUTED,
             font=("Segoe UI", 10),
@@ -126,21 +130,21 @@ class MaazXdroidApp:
 
         self._path_row(
             launch_panel,
-            "QEMU executable",
+            "01  QEMU engine",
             self.qemu_path,
             "Browse",
             self._browse_qemu,
         )
         self._path_row(
             launch_panel,
-            "Android system image",
+            "02  Android image",
             self.android_image_path,
             "Browse",
             self._browse_android_image,
         )
         self._path_row(
             launch_panel,
-            "Writable user data",
+            "03  User data",
             self.user_data_path,
             "Choose",
             self._choose_user_data,
@@ -150,7 +154,7 @@ class MaazXdroidApp:
         vm_actions.pack(fill="x", pady=(12, 0))
         tk.Label(
             vm_actions,
-            text="VM RAM",
+            text="04  LOW-END RAM PROFILE",
             bg=self.PANEL,
             fg=self.MUTED,
             font=("Segoe UI", 9, "bold"),
@@ -158,17 +162,24 @@ class MaazXdroidApp:
         self.memory_selector = ttk.Combobox(
             vm_actions,
             textvariable=self.vm_memory_mb,
-            values=("1024", "1536", "2048", "3072"),
+            values=("1024", "1280", "1536", "2048"),
             state="readonly",
             width=8,
         )
         self.memory_selector.pack(side="left", padx=(0, 16))
         self._button(
-            vm_actions, "Prepare Android Data", self._create_user_data, secondary=True
+            vm_actions, "Prepare Step 5", self._create_user_data, secondary=True
         ).pack(side="left", padx=(0, 8))
         self._button(
-            vm_actions, "Start MaazXdroid", self._start_android
+            vm_actions, "06  Start Android", self._start_android
         ).pack(side="left")
+        tk.Label(
+            launch_panel,
+            text="Target: 60 FPS. Actual frame rate depends on the Android image, QEMU graphics, driver, and game.",
+            bg=self.PANEL,
+            fg=self.WARNING,
+            font=("Segoe UI", 9),
+        ).pack(anchor="w", pady=(10, 0))
 
         metrics_row = tk.Frame(outer, bg=self.BACKGROUND)
         metrics_row.pack(fill="x", pady=(0, 14))
@@ -184,7 +195,7 @@ class MaazXdroidApp:
         capture_card.grid(row=1, column=2, sticky="nsew", padx=(7, 0), pady=(8, 0))
         tk.Label(
             capture_card,
-            text="CAPTURE",
+            text="07  PERFORMANCE CAPTURE",
             bg=self.PANEL,
             fg=self.MUTED,
             font=("Segoe UI", 9, "bold"),
@@ -238,12 +249,13 @@ class MaazXdroidApp:
             state="disabled",
         )
         self.log.pack(fill="both", expand=True, pady=(12, 0))
-        self._log("Select QEMU and a MaazXdroid QCOW2 Android system image.")
-        self._log("Prepare writable user data once, then start the Android system from this app.")
+        self._log("Setup: select QEMU, Android image, and user-data path; then prepare the overlay.")
+        if not Path(self.android_image_path.get()).is_file():
+            self._log("Android system image is not installed yet; this alpha does not bundle one.")
 
         footer = tk.Label(
             outer,
-            text="QEMU runs an Android guest; graphics acceleration and app compatibility depend on your system and image.",
+            text="Android image and 3D acceleration are not included in this alpha; game compatibility is unverified.",
             bg=self.BACKGROUND,
             fg=self.MUTED,
             font=("Segoe UI", 9),
@@ -251,7 +263,14 @@ class MaazXdroidApp:
         footer.pack(anchor="w", pady=(12, 0))
 
     def _panel(self, parent):
-        return tk.Frame(parent, bg=self.PANEL, padx=18, pady=16)
+        return tk.Frame(
+            parent,
+            bg=self.PANEL,
+            padx=18,
+            pady=16,
+            highlightthickness=1,
+            highlightbackground="#49325f",
+        )
 
     def _path_row(self, parent, label, variable, button_text, command):
         row = tk.Frame(parent, bg=self.PANEL)

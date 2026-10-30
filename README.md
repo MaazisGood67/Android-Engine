@@ -9,17 +9,17 @@ This repository contains the Windows manager and VM runtime prototype, not a new
 - Select a Windows QEMU executable and a MaazXdroid QCOW2 system image.
 - Create a writable QCOW2 overlay backed by the system image without overwriting existing user data.
 - Boot Android directly from the prepared system image and its writable overlay; no ISO or manual partitioning in the user flow.
-- Configure guest memory from 1 GB to 3 GB; use two virtual CPUs by default.
+- Configure guest memory from 1 GB to 2 GB in the UI; the low-end default is 1280 MB with two virtual CPUs.
 - Capture aggregate/per-logical-core CPU, RAM, pagefile, and disk metrics to CSV while testing.
 
-The VM uses WHPX acceleration and a standard virtual VGA device. WHPX requires Windows Hypervisor Platform support. The current graphics path is not a promise of 3D acceleration; many games may be slow or incompatible. ARM-only apps need a compatible translation layer, which this project does not include. No 100 FPS or anti-cheat compatibility guarantee is made.
+The VM uses WHPX acceleration and a standard virtual VGA device. WHPX requires Windows Hypervisor Platform support. The current graphics path does not provide verified 3D acceleration; many games may be slow or incompatible. ARM-only apps need a compatible translation layer, which this project does not include. The UI treats 60 FPS as a test target only, not a performance promise. The target laptop's panel is 60 Hz.
 
 ## Windows Requirements
 
 - Windows 10/11 64-bit with Windows Hypervisor Platform available and enabled.
 - A Windows QEMU distribution containing `qemu-system-x86_64.exe` and `qemu-img.exe` in the same folder.
 - A MaazXdroid Android QCOW2 system image. The image build/distribution pipeline is not implemented yet, so the current app cannot boot Android until that artifact is supplied.
-- For the target laptop: 4 GB RAM is tight. The default 1536 MB guest allocation may still cause host memory pressure; reduce it if Windows starts paging.
+- For the target laptop: 4 GB RAM is tight. The 1280 MB default guest allocation may still cause host memory pressure; reduce it if Windows starts paging.
 
 ## Build and Install
 
