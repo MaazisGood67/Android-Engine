@@ -91,6 +91,17 @@ class WsaController:
             raise WsaError(f"APK file not found: {path}")
         return self._run("-s", self.endpoint, "install", "-r", str(path), timeout=180)
 
+    def list_user_apps(self):
+        self._require_connected()
+        output = self._run(
+            "-s", self.endpoint, "shell", "pm", "list", "packages", "-3"
+        )
+        return sorted(
+            line.removeprefix("package:").strip()
+            for line in output.splitlines()
+            if line.startswith("package:")
+        )
+
     def _require_connected(self):
         self._validate_adb()
         devices = self._run("devices")

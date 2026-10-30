@@ -18,7 +18,7 @@ try {
     & $python scripts/create_icon.py
     if ($LASTEXITCODE -ne 0) { throw "Could not generate the application icon." }
 
-    & $python -m PyInstaller --noconfirm --clean --onefile --windowed --name MaazXdroid --icon assets/maazxdroid.ico wsa_manager.py
+    & $python -m PyInstaller --noconfirm --clean --onefile --windowed --name MaazXdroid --icon assets/maazxdroid.ico launcher.py
     if ($LASTEXITCODE -ne 0) { throw "PyInstaller failed to bundle the application." }
 
     $programFilesX86 = [Environment]::GetEnvironmentVariable("ProgramFiles(x86)")

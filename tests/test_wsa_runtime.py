@@ -68,6 +68,19 @@ class WsaControllerTests(unittest.TestCase):
             with self.assertRaisesRegex(WsaError, r"\.apk"):
                 self.controller.install_apk(file_path)
 
+    def test_lists_only_user_installed_packages(self):
+        with patch.object(
+            self.controller,
+            "_run",
+            side_effect=[
+                "List of devices attached\n127.0.0.1:58526\tdevice",
+                "package:com.example.game\npackage:com.example.store",
+            ],
+        ):
+            packages = self.controller.list_user_apps()
+
+        self.assertEqual(packages, ["com.example.game", "com.example.store"])
+
     def test_rejects_invalid_endpoint(self):
         controller = WsaController(self.adb, "127.0.0.1:99999")
 

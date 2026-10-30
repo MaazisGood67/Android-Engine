@@ -47,6 +47,7 @@ class MaazXdroidWsaApp:
         self.android_text = tk.StringVar(value="Android: --")
         self.abi_text = tk.StringVar(value="ABI: --")
         self.gms_text = tk.StringVar(value="Google Play services: unknown")
+        self.installed_apps_text = tk.StringVar(value="Connect to WSA to inspect installed apps.")
         self.host_text = tk.StringVar()
         self.status_text = tk.StringVar(value="Ready")
         self.action_queue = queue.Queue()
@@ -55,12 +56,23 @@ class MaazXdroidWsaApp:
         total_memory = psutil.virtual_memory().total / (1024**3)
         self.host_text.set(f"Host RAM {total_memory:.1f} GB")
         self.low_memory = total_memory < 8.0
+        self.low_end_mode = tk.BooleanVar(value=self.low_memory)
+        self.current_page = None
+        self.pages = {}
+        self.nav_buttons = {}
 
         self._configure_styles()
-        self._build_ui()
+        self._build_hub_ui()
         self.root.protocol("WM_DELETE_WINDOW", self.root.destroy)
         self.root.after(150, self._poll_actions)
+        self._apply_low_end_mode()
         self.root.after(1000, self._refresh_host_metrics)
+
+    def _apply_low_end_mode(self):
+        try:
+            self.root.attributes("-alpha", 1.0 if self.low_end_mode.get() else 0.97)
+        except tk.TclError:
+            pass
 
     def _configure_styles(self):
         style = ttk.Style(self.root)
@@ -73,6 +85,307 @@ class MaazXdroidWsaApp:
             lightcolor=self.ACCENT,
             darkcolor=self.ACCENT,
         )
+
+    def _build_hub_ui(self):
+        shell = tk.Frame(self.root, bg=self.BACKGROUND, padx=22, pady=18)
+        shell.pack(fill="both", expand=True)
+
+        header = tk.Frame(shell, bg=self.BACKGROUND)
+        header.pack(fill="x", pady=(0, 15))
+        brand = tk.Frame(header, bg=self.BACKGROUND)
+        brand.pack(side="left", fill="x", expand=True)
+        tk.Label(
+            brand,
+            text="MAAZX GAMING HUB",
+            bg=self.BACKGROUND,
+            fg=self.ACCENT,
+            font=("Segoe UI", 10, "bold"),
+        ).pack(anchor="w")
+        tk.Label(
+            brand,
+            text="Android Companion",
+            bg=self.BACKGROUND,
+            fg=self.TEXT,
+            font=("Segoe UI", 21, "bold"),
+        ).pack(anchor="w", pady=(2, 0))
+
+        low_end_toggle = tk.Checkbutton(
+            header,
+            text="Low-End UI Mode",
+            variable=self.low_end_mode,
+            command=self._apply_low_end_mode,
+            bg=self.BACKGROUND,
+            fg=self.TEXT,
+            activebackground=self.BACKGROUND,
+            activeforeground=self.ACCENT,
+            selectcolor=self.PANEL_ALT,
+            font=("Segoe UI", 9, "bold"),
+        )
+        low_end_toggle.pack(side="right", padx=(10, 0))
+        tk.Label(
+            header,
+            textvariable=self.status_text,
+            bg=self.BACKGROUND,
+            fg=self.ACCENT,
+            font=("Segoe UI", 9, "bold"),
+        ).pack(side="right")
+
+        body = tk.Frame(shell, bg=self.BACKGROUND)
+        body.pack(fill="both", expand=True)
+        sidebar = tk.Frame(body, bg=self.PANEL, width=190, padx=10, pady=12)
+        sidebar.pack(side="left", fill="y", padx=(0, 14))
+        sidebar.pack_propagate(False)
+        content = tk.Frame(body, bg=self.BACKGROUND)
+        content.pack(side="left", fill="both", expand=True)
+
+        for page_name in ("Dashboard", "Apps", "Performance", "Settings"):
+            button = tk.Button(
+                sidebar,
+                text=page_name,
+                command=lambda name=page_name: self._show_page(name),
+                anchor="w",
+                bg=self.PANEL_ALT,
+                fg=self.TEXT,
+                activebackground=self.ACCENT,
+                activeforeground=self.BACKGROUND,
+                relief="flat",
+                borderwidth=0,
+                padx=13,
+                pady=11,
+                cursor="hand2",
+                font=("Segoe UI", 10, "bold"),
+            )
+            button.pack(fill="x", pady=3)
+            self.nav_buttons[page_name] = button
+            page = tk.Frame(content, bg=self.BACKGROUND)
+            self.pages[page_name] = page
+
+        self._build_dashboard_page(self.pages["Dashboard"])
+        self._build_apps_page(self.pages["Apps"])
+        self._build_performance_page(self.pages["Performance"])
+        self._build_settings_page(self.pages["Settings"])
+        self._show_page("Dashboard")
+
+    def _page_heading(self, parent, title, description):
+        tk.Label(
+            parent,
+            text=title,
+            bg=self.BACKGROUND,
+            fg=self.TEXT,
+            font=("Segoe UI", 19, "bold"),
+        ).pack(anchor="w")
+        tk.Label(
+            parent,
+            text=description,
+            bg=self.BACKGROUND,
+            fg=self.MUTED,
+            font=("Segoe UI", 9),
+            wraplength=680,
+            justify="left",
+        ).pack(anchor="w", pady=(3, 12))
+
+    def _build_dashboard_page(self, page):
+        self._page_heading(
+            page,
+            "Configuration Panel",
+            "Connect to WSA, inspect the Android image, and see which app services are present.",
+        )
+        status_panel = self._panel(page)
+        status_panel.pack(fill="x", pady=(0, 10))
+        tk.Label(
+            status_panel,
+            textvariable=self.device_text,
+            bg=self.PANEL,
+            fg=self.TEXT,
+            font=("Segoe UI", 13, "bold"),
+        ).pack(anchor="w")
+        self.connect_button = self._button(status_panel, "Connect & inspect WSA", self._connect)
+        self.connect_button.pack(anchor="w", pady=(9, 0))
+
+        device_row = tk.Frame(page, bg=self.BACKGROUND)
+        device_row.pack(fill="x", pady=(0, 10))
+        for title, variable in (
+            ("ANDROID", self.android_text),
+            ("ABI", self.abi_text),
+            ("GOOGLE SERVICES", self.gms_text),
+        ):
+            card = self._panel(device_row)
+            card.pack(side="left", fill="both", expand=True, padx=(0, 7))
+            tk.Label(
+                card,
+                text=title,
+                bg=self.PANEL,
+                fg=self.MUTED,
+                font=("Segoe UI", 8, "bold"),
+            ).pack(anchor="w")
+            tk.Label(
+                card,
+                textvariable=variable,
+                bg=self.PANEL,
+                fg=self.TEXT,
+                wraplength=190,
+                justify="left",
+                font=("Segoe UI", 10, "bold"),
+            ).pack(anchor="w", pady=(8, 0))
+
+        apps_panel = self._panel(page)
+        apps_panel.pack(fill="both", expand=True)
+        tk.Label(
+            apps_panel,
+            text="INSTALLED USER APPS",
+            bg=self.PANEL,
+            fg=self.MUTED,
+            font=("Segoe UI", 9, "bold"),
+        ).pack(anchor="w")
+        tk.Label(
+            apps_panel,
+            textvariable=self.installed_apps_text,
+            bg=self.PANEL,
+            fg=self.TEXT,
+            justify="left",
+            wraplength=680,
+            font=("Segoe UI", 10),
+        ).pack(anchor="w", pady=(10, 0))
+
+    def _build_apps_page(self, page):
+        self._page_heading(
+            page,
+            "App Configurations",
+            "Sideload APKs into the connected WSA runtime. MaazXdroid does not bundle third-party app stores.",
+        )
+        install_panel = self._panel(page)
+        install_panel.pack(fill="x", pady=(0, 10))
+        tk.Label(
+            install_panel,
+            text="INSTALL A LOCAL APK",
+            bg=self.PANEL,
+            fg=self.MUTED,
+            font=("Segoe UI", 9, "bold"),
+        ).pack(anchor="w")
+        self.install_button = self._button(
+            install_panel, "Browse APK and install", self._install_apk
+        )
+        self.install_button.pack(anchor="w", pady=(10, 0))
+
+        stores = self._panel(page)
+        stores.pack(fill="x", pady=(0, 10))
+        tk.Label(
+            stores,
+            text="APP SOURCES",
+            bg=self.PANEL,
+            fg=self.MUTED,
+            font=("Segoe UI", 9, "bold"),
+        ).pack(anchor="w")
+        links = tk.Frame(stores, bg=self.PANEL)
+        links.pack(anchor="w", pady=(10, 0))
+        for title, url in (
+            ("Uptodown", "https://en.uptodown.com/android"),
+            ("APKMirror", "https://www.apkmirror.com/"),
+            ("APKPure", "https://apkpure.com/"),
+        ):
+            self._button(
+                links,
+                title,
+                lambda target=url: self._open_store(target),
+                secondary=True,
+            ).pack(side="left", padx=(0, 8))
+        tk.Label(
+            stores,
+            text="Download only from sources you trust. Check APK signatures and ABI compatibility before installation.",
+            bg=self.PANEL,
+            fg=self.MUTED,
+            wraplength=680,
+            justify="left",
+            font=("Segoe UI", 9),
+        ).pack(anchor="w", pady=(10, 0))
+
+    def _build_performance_page(self, page):
+        self._page_heading(
+            page,
+            "Performance Tuning",
+            "The dashboard measures host load. WSA manages its own VM resources; MaazXdroid does not fake RAM/GPU controls.",
+        )
+        summary = self._panel(page)
+        summary.pack(fill="x", pady=(0, 10))
+        self.cpu_text = tk.StringVar(value="CPU --%")
+        self.available_text = tk.StringVar(value="RAM available -- GB")
+        for title, variable in (("SYSTEM CPU", self.cpu_text), ("AVAILABLE RAM", self.available_text)):
+            item = tk.Frame(summary, bg=self.PANEL)
+            item.pack(side="left", fill="x", expand=True)
+            tk.Label(item, text=title, bg=self.PANEL, fg=self.MUTED, font=("Segoe UI", 8, "bold")).pack(anchor="w")
+            tk.Label(item, textvariable=variable, bg=self.PANEL, fg=self.TEXT, font=("Segoe UI", 17, "bold")).pack(anchor="w", pady=(6, 0))
+
+        limits = self._panel(page)
+        limits.pack(fill="x")
+        tk.Label(
+            limits,
+            text="60 FPS is a test target, not a guarantee. A 60 Hz display cannot show more than 60 refreshes per second. WSA 3D acceleration and Free Fire compatibility are not verified.",
+            bg=self.PANEL,
+            fg=self.WARNING,
+            wraplength=680,
+            justify="left",
+            font=("Segoe UI", 10),
+        ).pack(anchor="w")
+
+    def _build_settings_page(self, page):
+        self._page_heading(
+            page,
+            "Settings",
+            "Connect MaazXdroid to an existing WSA installation. Windows/WSA setup remains separate.",
+        )
+        settings = self._panel(page)
+        settings.pack(fill="x", pady=(0, 10))
+        self._path_row(settings, "ADB executable", self.adb_path, "Browse", self._browse_adb)
+        endpoint_row = tk.Frame(settings, bg=self.PANEL)
+        endpoint_row.pack(fill="x", pady=(8, 0))
+        tk.Label(
+            endpoint_row,
+            text="ADB endpoint",
+            width=18,
+            anchor="w",
+            bg=self.PANEL,
+            fg=self.MUTED,
+            font=("Segoe UI", 9),
+        ).pack(side="left", padx=(0, 8))
+        tk.Entry(
+            endpoint_row,
+            textvariable=self.endpoint,
+            bg=self.PANEL_ALT,
+            fg=self.TEXT,
+            insertbackground=self.TEXT,
+            relief="flat",
+            font=("Segoe UI", 9),
+        ).pack(side="left", fill="x", expand=True, ipady=7, padx=(0, 8))
+        self._button(endpoint_row, "Connect", self._connect).pack(side="left")
+        self._button(
+            settings,
+            "Open WSA Settings",
+            self._open_wsa_settings,
+            secondary=True,
+        ).pack(anchor="w", pady=(10, 0))
+        notice = self._panel(page)
+        notice.pack(fill="x")
+        tk.Label(
+            notice,
+            text="WSAOnWin10 is archived and AGPL-3.0 licensed. Microsoft WSA and Google components keep their own terms. This manager does not install, rename, or redistribute those binaries.",
+            bg=self.PANEL,
+            fg=self.MUTED,
+            wraplength=680,
+            justify="left",
+            font=("Segoe UI", 9),
+        ).pack(anchor="w")
+
+    def _show_page(self, name):
+        if self.current_page:
+            self.pages[self.current_page].pack_forget()
+        self.pages[name].pack(fill="both", expand=True)
+        self.current_page = name
+        for page_name, button in self.nav_buttons.items():
+            selected = page_name == name
+            button.configure(
+                bg=self.ACCENT if selected else self.PANEL_ALT,
+                fg=self.BACKGROUND if selected else self.TEXT,
+            )
 
     def _build_ui(self):
         outer = tk.Frame(self.root, bg=self.BACKGROUND, padx=28, pady=22)
@@ -361,7 +674,7 @@ class MaazXdroidWsaApp:
     def _connect_and_inspect(self):
         controller = self._controller()
         message = controller.connect()
-        return message, controller.inspect()
+        return message, controller.inspect(), controller.list_user_apps()
 
     def _install_apk(self):
         apk_path = filedialog.askopenfilename(
@@ -369,7 +682,12 @@ class MaazXdroidWsaApp:
             filetypes=(("Android packages", "*.apk"),),
         )
         if apk_path:
-            self._submit("install", lambda: self._controller().install_apk(apk_path))
+            self._submit("install", lambda: self._install_and_refresh(apk_path))
+
+    def _install_and_refresh(self, apk_path):
+        controller = self._controller()
+        result = controller.install_apk(apk_path)
+        return result, controller.list_user_apps()
 
     def _open_store(self, url):
         webbrowser.open(url, new=2)
@@ -406,12 +724,15 @@ class MaazXdroidWsaApp:
             self._log(f"{action.title()} failed: {error}")
             messagebox.showerror("MaazXdroid action failed", str(error))
         elif action == "connect":
-            message, info = result
+            message, info, apps = result
             self._show_device(info)
+            self._show_apps(apps)
             self.status_text.set("WSA connected")
             self.status_label.configure(fg=self.ACCENT)
             self._log(message)
         else:
+            result, apps = result
+            self._show_apps(apps)
             self.status_text.set("APK installed")
             self.status_label.configure(fg=self.ACCENT)
             self._log(result or "ADB reported successful APK installation.")
@@ -426,6 +747,12 @@ class MaazXdroidWsaApp:
             self.gms_text.set(f"Google sign-in: services present; {store_state}")
         else:
             self.gms_text.set("Google sign-in: Play services not detected")
+
+    def _show_apps(self, package_names):
+        if package_names:
+            self.installed_apps_text.set("\n".join(package_names))
+        else:
+            self.installed_apps_text.set("No third-party packages reported by WSA.")
 
     def _refresh_host_metrics(self):
         memory = psutil.virtual_memory()
